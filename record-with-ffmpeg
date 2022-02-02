@@ -1,0 +1,147 @@
+#!/bin/sh
+
+#dependencies= pulseaudio, ffmpeg
+videodir="$HOME/Videos/ffmpeg/"
+audiodir="$HOME/Audio/ffmpeg/"
+recordingresolution="1366x768" # monitor resolution
+outputresolution="1366x768" # output video resolution <= recoordingresolution
+
+#get these audio input sources from 'pactl list sources' command under Name section
+monitoraudioinput="alsa_output.pci-0000_00_1f.3.analog-stereo.monitor" # internal/system/monitor audio
+microphoneaudioinput="alsa_input.pci-0000_00_1f.3.analog-stereo" # external/microphone audio
+
+# also check ac and ar value using 'pactl list source' command under Sample Specification section
+# for eg: if output has:: Sample Specification: s16le 2ch 48000Hz
+# then ac is 2 (i.e, ch value)
+# and ar is 48000 (i.e, audio frequency)
+monitoraudiochannel="2"
+microphoneaudiochannel="2"
+monitoraudiofrequency="48000"
+microphoneaudiofrequency="44100"
+outputaudiofrequency="44100" # smaller among audio inputs
+
+checkVideoDir(){
+if [ ! -d "$videodir" ]; then
+    mkdir -p "$videodir"
+fi
+}
+
+checkAudioDir(){
+if [ ! -d "$audiodir" ]; then
+    mkdir -p "$audiodir"
+fi
+}
+
+internalAudioOnly(){
+	ffmpeg \
+		-f pulse -ac "$monitoraudiochannel" -ar "$monitoraudiofrequency" -i "$monitoraudioinput" \
+		-acodec libmp3lame -ar "$outputaudiofrequency" -q:a 1 \
+        "$(date +ffmpeg-"%Y-%m-%d-%I-%M-%S-%p").wav"
+}
+
+microphoneOnly(){
+    ffmpeg \
+		-f pulse -ac "$microphoneaudiochannel" -ar "$microphoneaudiofrequency" -i "$microphoneaudioinput" \
+		-acodec libmp3lame -ar "$outputaudiofrequency" -q:a 1 \
+        "$(date +ffmpeg-"%Y-%m-%d-%I-%M-%S-%p").wav"
+}
+
+internalAudioAndMicrophone(){
+    ffmpeg \
+        -f pulse -ac "$monitoraudiochannel" -ar "$monitoraudiofrequency" -i "$monitoraudioinput" \
+		-f pulse -ac "$microphoneaudiochannel" -ar "$microphoneaudiofrequency" -i "$microphoneaudioinput" \
+		-filter_complex amix=inputs=2 \
+		-acodec libmp3lame -ar "$outputaudiofrequency" -q:a 1 \
+        "$(date +ffmpeg-"%Y-%m-%d-%I-%M-%S-%p").wav"
+}
+
+videoWithoutAudio(){
+    ffmpeg \
+		-f x11grab -r 30 -s "$recordingresolution" -i :0.0+0,0 \
+		-vcodec libx264 -preset veryfast -crf 18 \
+		-pix_fmt yuv420p \
+        -s "$outputresolution" "$(date +ffmpeg-"%Y-%m-%d-%I-%M-%S-%p").mkv"
+}
+
+videoWithInternalAudio(){
+    ffmpeg \
+        -f pulse -ac "$monitoraudiochannel" -ar "$monitoraudiofrequency" -i "$monitoraudioinput" \
+		-f x11grab -r 30 -s "$recordingresolution" -i :0.0+0,0 \
+		-vcodec libx264 -preset veryfast -crf 18 \
+		-acodec libmp3lame -ar "$outputaudiofrequency" -q:a 1 \
+		-pix_fmt yuv420p \
+        -s "$outputresolution" "$(date +ffmpeg-"%Y-%m-%d-%I-%M-%S-%p").mkv"
+}
+
+videoWithMicrophone(){
+    ffmpeg \
+		-f pulse -ac "$microphoneaudiochannel" -ar "$microphoneaudiofrequency" -i "$microphoneaudioinput" \
+		-f x11grab -r 30 -s "$recordingresolution" -i :0.0+0,0 \
+		-vcodec libx264 -preset veryfast -crf 18 \
+		-acodec libmp3lame -ar "$outputaudiofrequency" -q:a 1 \
+		-pix_fmt yuv420p \
+        -s "$outputresolution" "$(date +ffmpeg-"%Y-%m-%d-%I-%M-%S-%p").mkv"
+}
+
+videoWithMicrophoneAndInternalAudio(){
+    ffmpeg \
+        -f pulse -ac "$monitoraudiochannel" -ar "$monitoraudiofrequency" -i "$monitoraudioinput" \
+        -f pulse -ac "$microphoneaudiochannel" -ar "$microphoneaudiofrequency" -i "$microphoneaudioinput" \
+		-filter_complex amix=inputs=2 \
+		-f x11grab -r 30 -s "$recordingresolution" -i :0.0+0,0 \
+		-vcodec libx264 -preset veryfast -crf 18 \
+		-acodec libmp3lame -ar "$outputaudiofrequency" -q:a 1 \
+		-pix_fmt yuv420p \
+        -s "$outputresolution" "$(date +ffmpeg-"%Y-%m-%d-%I-%M-%S-%p").mkv"
+}
+
+PS3="Choose your recording option [1-8]: "
+options=("InternalAudioOnly" "MicrophoneOnly" "InternalAudioAndMic" "VideoWithoutAudio" "VideoWithInternalAudio" "VideoWithMic" "VideoWithBothMicAndInternalAudio" "Quit")
+
+select one in "${options[@]}"; do
+    case $one in
+        InternalAudioOnly)
+            checkAudioDir
+            cd "$audiodir"
+            internalAudioOnly
+        ;;
+        MicrophoneOnly)
+            checkAudioDir
+            cd "$audiodir"
+            microphoneOnly
+        ;;
+        InternalAudioAndMic)
+            checkAudioDir
+            cd "$audiodir"
+            internalAudioAndMicrophone
+        ;;
+        VideoWithoutAudio)
+            checkVideoDir
+            cd "$videodir"
+            videoWithoutAudio
+        ;;
+        VideoWithInternalAudio)
+            checkVideoDir
+            cd "$videodir"
+            videoWithInternalAudio
+        ;;
+        VideoWithMic)
+            checkVideoDir
+            cd "$videodir"
+            videoWithMicrophone
+        ;;
+        VideoWithBothMicAndInternalAudio)
+            checkVideoDir
+            cd "$videodir"
+            videoWithMicrophoneAndInternalAudio
+        ;;
+        Quit)
+            printf "Exitting...."
+            exit 0
+        ;;
+        *)
+            printf "Invalid Choice."
+        ;;
+    esac
+done
+
