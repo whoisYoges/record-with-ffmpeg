@@ -22,8 +22,8 @@ Record your desktop audio, microphone and  video in linux from terminal.
 ### 1. Get the installation script in your system.
 
 ```
-git clone https://github.com/whoisYoges/record-with-ffmpeg \
-	cd record-with-ffmpeg/
+git clone https://github.com/whoisYoges/record-with-ffmpeg
+cd record-with-ffmpeg/
 ```
 
 ### 2. Make necessary changes in [record-with-ffmpeg](record-with-ffmpeg)
@@ -60,10 +60,10 @@ then audiochannel is 2 (i.e, audio channel) and audiofrequency is 44100 (i.e, au
 ### 3. Place it in the path.
 
 ```
-chmod +x record-with-ffmpeg \
-	sudo mv record-with-ffmpeg /usr/local/bin/ \
-	cd ../ \
-	rm -r record-with-ffmpeg
+chmod +x record-with-ffmpeg
+sudo mv record-with-ffmpeg /usr/local/bin/
+cd ../
+rm -r record-with-ffmpeg
 ```
 
 ## Uninstallation
