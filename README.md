@@ -1,6 +1,6 @@
 # record-with-ffmpeg
 
-Record your desktop audio, microphone and  video in linux from terminal.
+Record your desktop audio, microphone and video in linux from terminal.
 
 ## Features
 - fully command line tool
@@ -14,7 +14,7 @@ Record your desktop audio, microphone and  video in linux from terminal.
     - Video with both internal audio and microphone
 
 ## Dependencies
-- pulseaudio
+- pipewire-pulse or pulseaudio (any one)
 - ffmpeg
 
 ## Installation
